@@ -1,0 +1,12 @@
+{
+  "name": "pdf-scrapo",
+  "version": "1.0.0",
+  "description": "PDF-Scrapo, scrapes from PDF.",
+  "main": "pdf-scrapo.js",
+  "scripts": {
+    "example": "node example/cli.js"
+  },
+  "keywords": ["pdf","parse","parsing","formatting","format"],
+  "author": "Yakup Cemil Kayabaş",
+  "license": "GPL-3.0-only"
+}
