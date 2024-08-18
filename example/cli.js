@@ -1,25 +1,24 @@
-const readline = require('readline');
-const path = require('path');
-const { processPDF, getPdfData, getParsedText } = require('../pdf-scrapo.js');
+const { readPDFFile, parsePDF, processParsedText, replace, saveToFile, processPDF, getParsedText } = require('../pdf-scrapo.js');
 
-// Set up command line interface
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+const inputFilePath = 'input.pdf';
+readPDFFile(inputFilePath);
 
-// Prompt user for PDF file name
-rl.question('Please enter the PDF file name (including extension): ', (inputFileName) => {
-    const inputFilePath = path.join(__dirname, inputFileName);
-    const outputFilePath = path.join(__dirname, 'output.txt');
+const parsedText = parsePDF();
+console.log('Parsed Text:', parsedText);
 
-    processPDF(inputFilePath, outputFilePath);
+const styledText = processParsedText('Italic');
+console.log('Styled Text:', styledText);
 
-    // Display raw PDF data and parsed text
-    console.log('RAW PDF DATA:\n');
-    console.log(getPdfData());
-    console.log('PARSED TEXT:\n');
-    console.log(getParsedText());
+const translatedText = [
+    'Bu basit bir PDF\'dir',
+    'Bu kalın metin',
+    'Bu italik metin'
+];
 
-    rl.close();
-});
+const replacedText = replace(parsedText, translatedText);
+console.log('Replaced Text:', replacedText);
+
+const outputFilePath = 'output_translated.pdf';
+saveToFile(outputFilePath);
+
+processPDF(inputFilePath, 'output.txt');

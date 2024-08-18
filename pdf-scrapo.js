@@ -1,11 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 
-// Internal state of the library
 let pdfData = null;
 let parsedText = null;
+let fontMap = {};
 
-// Reads the PDF file from the specified file path
+
 function readPDFFile(filePath) {
     try {
         pdfData = fs.readFileSync(filePath, 'utf8');
@@ -16,7 +16,6 @@ function readPDFFile(filePath) {
     }
 }
 
-// Parses the PDF data and extracts text
 function parsePDF() {
     if (!pdfData) {
         console.error('No PDF data available.');
@@ -25,8 +24,10 @@ function parsePDF() {
 
     const lines = pdfData.split('\n');
     const text = [];
+    fontMap = {};
 
     let inStream = false;
+    let currentFont = null;
 
     lines.forEach(line => {
         line = line.trim();
@@ -35,40 +36,98 @@ function parsePDF() {
             inStream = true;
         } else if (line === "endstream") {
             inStream = false;
+        } else if (line.startsWith('/BaseFont')) {
+            const match = /\/BaseFont\s\/(\w+)(?:-Bold|-Oblique)?/.exec(line);
+            if (match) {
+                currentFont = match[1];
+                fontMap[currentFont] = match[0];
+            }
         } else if (inStream) {
             const match = /\((.*)\) Tj/.exec(line);
             if (match) {
-                text.push(match[1]);
+                text.push({ text: match[1], font: currentFont });
             }
         }
     });
 
-    parsedText = text.join('\n');
+    parsedText = text;
     return parsedText;
 }
 
-// Saves the raw PDF data and parsed text to a file
+function processParsedText(style) {
+    if (!parsedText) {
+        console.error('No parsed text available.');
+        return null;
+    }
+
+    const styleMap = {
+        Italic: '-Oblique',
+        Bold: '-Bold'
+    };
+
+    if (!styleMap[style]) {
+        console.error('Invalid style provided.');
+        return null;
+    }
+
+    parsedText = parsedText.map(item => {
+        if (item.font) {
+            item.font = `${item.font}${styleMap[style]}`;
+        }
+        return item;
+    });
+
+    return parsedText;
+}
+
+function replace(parsedText, newText) {
+    if (!parsedText) {
+        console.error('No parsed text provided.');
+        return null;
+    }
+
+    if (!newText || newText.length !== parsedText.length) {
+        console.error('Invalid new text provided.');
+        return null;
+    }
+
+    const newContent = parsedText.map((item, index) => ({
+        text: newText[index],
+        font: item.font
+    }));
+
+    let updatedPDF = pdfData;
+    parsedText.forEach((item, index) => {
+        const regex = new RegExp(`\\(${item.text}\\) Tj`, 'g');
+        updatedPDF = updatedPDF.replace(regex, `(${newContent[index].text}) Tj`);
+    });
+
+    pdfData = updatedPDF;
+
+    return newContent;
+}
+
 function saveToFile(filename) {
     if (!pdfData || !parsedText) {
         console.error('No data available.');
         return;
     }
 
-    const combinedContent = `RAW PDF DATA:\n\n${pdfData}\n\nPARSED TEXT:\n\n${parsedText}`;
+    const combinedContent = `\n\n${pdfData}\n\n`;
     fs.writeFileSync(filename, combinedContent, 'utf8');
 }
 
-// Processes the PDF file and saves the results to a text file
 function processPDF(inputFilePath, outputFilePath) {
     readPDFFile(inputFilePath);
     parsePDF();
     saveToFile(outputFilePath);
 }
 
-// Module exports
 module.exports = {
     readPDFFile,
     parsePDF,
+    processParsedText,
+    replace,
     saveToFile,
     processPDF,
     getPdfData: () => pdfData,
