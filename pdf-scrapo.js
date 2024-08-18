@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 let pdfData = null;
-let parsedText = null;
+let parsedText = [];
 let fontMap = {};
 
 
