@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 let pdfData = null;
-let parsedText = [];
+let parsedText = null;
 let fontMap = {};
 
 
@@ -19,7 +19,7 @@ function readPDFFile(filePath) {
 function parsePDF() {
     if (!pdfData) {
         console.error('No PDF data available.');
-        return [];
+        return null;
     }
 
     const lines = pdfData.split('\n');
@@ -80,26 +80,31 @@ function processParsedText(style) {
     return parsedText;
 }
 
-function replace(parsedText, newTexts) {
-    if (!Array.isArray(parsedText)) {
-        console.error('Parsed text is not an array.');
+function replace(parsedText, newText) {
+    if (!parsedText) {
+        console.error('No parsed text provided.');
         return null;
     }
 
-    if (!Array.isArray(newTexts)) {
-        console.error('New texts should be an array.');
+    if (!newText || newText.length !== parsedText.length) {
+        console.error('Invalid new text provided.');
         return null;
     }
 
-    if (parsedText.length !== newTexts.length) {
-        console.error('Parsed text and new texts arrays do not match in length.');
-        return null;
-    }
-
-    return parsedText.map((item, index) => ({
-        text: newTexts[index] || item.text,
+    const newContent = parsedText.map((item, index) => ({
+        text: newText[index],
         font: item.font
     }));
+
+    let updatedPDF = pdfData;
+    parsedText.forEach((item, index) => {
+        const regex = new RegExp(`\\(${item.text}\\) Tj`, 'g');
+        updatedPDF = updatedPDF.replace(regex, `(${newContent[index].text}) Tj`);
+    });
+
+    pdfData = updatedPDF;
+
+    return newContent;
 }
 
 function saveToFile(filename) {

@@ -1,6 +1,6 @@
 const { readPDFFile, parsePDF, processParsedText, replace, saveToFile, processPDF, getParsedText } = require('../pdf-scrapo.js');
 
-const inputFilePath = 'input.pdf';
+const inputFilePath = 'example/' + 'input.pdf';
 readPDFFile(inputFilePath);
 
 const parsedText = parsePDF();
